@@ -2,17 +2,36 @@
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using NLog;
 
 namespace TPLinkSTBridgeService
 {
+	/// <summary>
+	/// The BridgeService is a bridge between SmartThings and TP-Link devices on the network
+	/// </summary>
 	public class BridgeService
 	{
+		#region Fields
+
+		/// <summary>
+		/// The logger
+		/// </summary>
 		private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+		/// <summary>
+		/// The cancellation token source
+		/// </summary>
 		readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
+		#endregion
+
+		#region Public Methods
+
+		/// <summary>
+		/// Starts the bridge service
+		/// </summary>
 		public bool Start()
 		{
 			_logger.Trace("Started service");
@@ -20,6 +39,9 @@ namespace TPLinkSTBridgeService
 			return true;
 		}
 
+		/// <summary>
+		/// Stops the bridge service
+		/// </summary>
 		public bool Stop()
 		{
 			_logger.Trace("Stopping service");
@@ -28,6 +50,13 @@ namespace TPLinkSTBridgeService
 			return true;
 		}
 
+		#endregion
+
+		#region Private Methods
+
+		/// <summary>
+		/// Starts a new listener and processes incoming requests until cancelled
+		/// </summary>
 		private static void DoWork(object obj)
 		{
 			var token = (CancellationToken)obj;
@@ -55,6 +84,10 @@ namespace TPLinkSTBridgeService
 			_logger.Trace("Exiting DoWork");
 		}
 
+		/// <summary>
+		/// Processes the incoming requests.
+		/// </summary>
+		/// <param name="listener">The listener.</param>
 		private static void ProcessIncomingRequests(HttpListener listener)
 		{
 			var context = listener.GetContext();
@@ -71,49 +104,88 @@ namespace TPLinkSTBridgeService
 			switch (command)
 			{
 				case "restartPC":
-					{
-						_logger.Trace("Restarting PC");
-						response.AddHeader("cmd-response", "restartPC");
-						response.Close();
+				{
+					_logger.Trace("Restarting PC");
+					response.AddHeader("cmd-response", "restartPC");
+					response.Close();
 
-						Process.Start("shutdown", "/r /t 005");
+					Process.Start("shutdown", "/r /t 005");
 
-						break;
-					}
+					break;
+				}
 
 				case "pollServer":
-					{
-						_logger.Trace("Server poll response sent to SmartThings");
-						response.AddHeader("cmd-response", "ok");
-						response.Close();
-						break;
-					}
+				{
+					_logger.Trace("Server poll response sent to SmartThings");
+					response.AddHeader("cmd-response", "ok");
+					response.Close();
+					break;
+				}
 
 				case "deviceCommand":
-					{
-						ProcessDeviceCommand(request, response);
-						response.Close();
-						break;
-					}
+				{
+					_logger.Trace("Processing device command");
+
+					var deviceCommand = request.Headers["tplink-command"];
+					var deviceHost = request.Headers["tplink-iot-ip"];
+
+					var deviceResponse = ProcessDeviceCommand(deviceCommand, deviceHost);
+
+					response.AddHeader("cmd-response", deviceResponse);
+					response.Close();
+					break;
+				}
+
+				case "bridgeCommand":
+				{
+					_logger.Trace("Processing bridge command");
+
+					var bridgeCommand = request.Headers["bridge-command"];
+					var bridgeResponse = ProcessBridgeCommand(bridgeCommand);
+
+					response.ContentType = "application/json";
+					response.Close(Encoding.ASCII.GetBytes(bridgeResponse), false);
+
+					break;
+				}
 
 				default:
-					{
-						_logger.Warn("Invalid Command received from SmartThings: {0}", command);
-						response.AddHeader("cmd-response", "TcpTimeout");
-						response.Close();
-						break;
-					}
+				{
+					_logger.Warn("Invalid Command received from SmartThings: {0}", command);
+					response.AddHeader("cmd-response", "TcpTimeout");
+					response.Close();
+					break;
+				}
 			}
 		}
 
-		private static void ProcessDeviceCommand(HttpListenerRequest request, HttpListenerResponse response)
+		/// <summary>
+		/// Processes the bridge command.
+		/// </summary>
+		/// <param name="command">The command.</param>
+		/// <returns>System.String.</returns>
+		private static string ProcessBridgeCommand(string command)
 		{
-			var command = request.Headers["tplink-command"];
-			var deviceIP = request.Headers["tplink-iot-ip"];
-			_logger.Trace($"Sending to IP address: {deviceIP} Command: {command}");
+			_logger.Trace($"ProcessBridgeCommand: {command}");
 
-			var commandSender = new CommandSender(deviceIP, command);
-			commandSender.Send();
+			var commandSender = new BridgeCommandSender();
+			return commandSender.ExecuteCommand(command);
 		}
+
+		/// <summary>
+		/// Processes the device command.
+		/// </summary>
+		/// <param name="command">The command.</param>
+		/// <param name="host">The host.</param>
+		/// <returns>System.String.</returns>
+		private static string ProcessDeviceCommand(string command, string host)
+		{
+			_logger.Trace($"Sending to IP address: {host} Command: {command}");
+
+			var commandSender = new CommandSender(host, command);
+			return commandSender.Send();
+		}
+
+		#endregion
 	}
 }

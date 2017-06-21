@@ -54,7 +54,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\BridgeCommandSender.cs" />
     <Compile Include="Components\BridgeService.cs" />
+    <Compile Include="Components\CommandEncryptor.cs" />
     <Compile Include="Components\CommandSender.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -6,7 +6,7 @@ goto check_permissions
 
 net session >nul 2>&1
 if %errorLevel% == 0 (
-	goto install_service
+	goto remove_service
 ) else (
 	goto bad_permissions
 )
@@ -14,9 +14,9 @@ if %errorLevel% == 0 (
 pause >nul
 
 
-:install_service
+:remove_service
 
-echo Installing Service...
+echo Removing Service...
 echo.
 pushd .\TPLinkSTBridgeService\bin\Debug\
 TPLinkSTBridgeService.exe uninstall

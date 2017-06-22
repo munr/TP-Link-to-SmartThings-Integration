@@ -18,6 +18,8 @@ pause >nul
 
 echo Removing Service...
 echo.
+net stop tplinkstbridge
+echo.
 pushd .\TPLinkSTBridgeService\bin\Debug\
 TPLinkSTBridgeService.exe uninstall
 popd

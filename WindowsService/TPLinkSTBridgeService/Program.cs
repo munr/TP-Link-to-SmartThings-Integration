@@ -1,13 +1,10 @@
-﻿using NLog;
-using Topshelf;
+﻿using Topshelf;
 
 namespace TPLinkSTBridgeService
 {
 	class Program
 	{
-		private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-
-		static void Main(string[] args)
+		static void Main()
 		{
 			HostFactory.Run(x =>
 			{

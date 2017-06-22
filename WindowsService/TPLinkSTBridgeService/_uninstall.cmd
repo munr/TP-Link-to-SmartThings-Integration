@@ -18,6 +18,8 @@ pause >nul
 
 echo Removing Service...
 echo.
+net stop tplinkstbridge
+echo.
 TPLinkSTBridgeService.exe uninstall
 goto end
 

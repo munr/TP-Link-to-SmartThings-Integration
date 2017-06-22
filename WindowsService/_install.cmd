@@ -21,6 +21,8 @@ echo.
 pushd .\TPLinkSTBridgeService\bin\Debug\
 TPLinkSTBridgeService.exe install
 popd
+echo.
+net start tplinkstbridge
 goto end
 
 

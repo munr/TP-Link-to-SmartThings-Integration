@@ -72,7 +72,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <None Include="Readme.md" />
     <None Include="_install.cmd">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

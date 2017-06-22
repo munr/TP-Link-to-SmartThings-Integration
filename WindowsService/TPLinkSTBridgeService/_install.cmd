@@ -19,6 +19,8 @@ pause >nul
 echo Installing Service...
 echo.
 TPLinkSTBridgeService.exe install
+echo.
+net start tplinkstbridge
 goto end
 
 

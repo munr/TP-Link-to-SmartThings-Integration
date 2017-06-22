@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -129,10 +130,20 @@ namespace TPLinkSTBridgeService
 					var deviceCommand = request.Headers["tplink-command"];
 					var deviceHost = request.Headers["tplink-iot-ip"];
 
-					var deviceResponse = ProcessDeviceCommand(deviceCommand, deviceHost);
+					try
+					{
+						var deviceResponse = ProcessDeviceCommand(deviceCommand, deviceHost);
 
-					response.AddHeader("cmd-response", deviceResponse);
-					response.Close();
+						response.AddHeader("cmd-response", deviceResponse);
+						response.Close();
+					}
+					catch (Exception e)
+					{
+						_logger.Error(e, "Error processing device command");
+						response.StatusCode = 500;
+						response.Close(Encoding.ASCII.GetBytes(e.Message), false);
+					}
+
 					break;
 				}
 
@@ -141,10 +152,20 @@ namespace TPLinkSTBridgeService
 					_logger.Trace("Processing bridge command");
 
 					var bridgeCommand = request.Headers["bridge-command"];
-					var bridgeResponse = ProcessBridgeCommand(bridgeCommand);
 
-					response.ContentType = "application/json";
-					response.Close(Encoding.ASCII.GetBytes(bridgeResponse), false);
+					try
+					{
+						var bridgeResponse = ProcessBridgeCommand(bridgeCommand);
+
+						response.ContentType = "application/json";
+						response.Close(Encoding.ASCII.GetBytes(bridgeResponse), false);
+					}
+					catch (Exception e)
+					{
+							_logger.Error(e, "Error processing bridge command");
+							response.StatusCode = 500;
+							response.Close(Encoding.ASCII.GetBytes(e.Message), false);
+						}
 
 					break;
 				}
@@ -182,7 +203,7 @@ namespace TPLinkSTBridgeService
 		{
 			_logger.Trace($"Sending to IP address: {host} Command: {command}");
 
-			var commandSender = new CommandSender(host, command);
+			var commandSender = new DeviceCommandSender(host, command);
 			return commandSender.Send();
 		}
 

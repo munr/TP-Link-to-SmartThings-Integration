@@ -1,4 +1,5 @@
-﻿using NLog;
+﻿using Newtonsoft.Json;
+using NLog;
 
 namespace TPLinkSTBridgeService
 {
@@ -20,8 +21,11 @@ namespace TPLinkSTBridgeService
 			{
 				case "getDeviceList":
 				{
-					return "Not Implemented";
-					break;
+					var finder = new DeviceFinder();
+					var devices = finder.Find();
+					var json = JsonConvert.SerializeObject(devices);
+
+					return json;
 				}
 				default:
 				{

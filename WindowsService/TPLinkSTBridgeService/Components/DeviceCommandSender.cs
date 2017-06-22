@@ -1,18 +1,17 @@
 ﻿using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using NLog;
 
 namespace TPLinkSTBridgeService
 {
-	internal class CommandSender
+	internal class DeviceCommandSender
 	{
 		#region Fields
 
 		private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-		private readonly CommandEncryptor _commandEncryptor = new CommandEncryptor();
+		private readonly DeviceCommandEncryptor _deviceCommandEncryptor = new DeviceCommandEncryptor(false);
 
 		private readonly string _host;
 
@@ -21,16 +20,16 @@ namespace TPLinkSTBridgeService
 		#endregion
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CommandSender"/> class.
+		/// Initializes a new instance of the <see cref="DeviceCommandSender"/> class.
 		/// </summary>
 		/// <param name="host">The host.</param>
 		/// <param name="command">The command.</param>
-		public CommandSender(string host, string command)
+		public DeviceCommandSender(string host, string command)
 		{
 			_host = host;
 			_command = command;
 
-			_logger.Trace("Initialized CommandSender - host: {0}, command: {1}", host, command);
+			_logger.Trace("Initialized DeviceCommandSender - host: {0}, command: {1}", host, command);
 		}
 
 		/// <summary>
@@ -40,7 +39,7 @@ namespace TPLinkSTBridgeService
 		{
 			_logger.Trace("Sending command");
 
-			var commandBytes = _commandEncryptor.Encrypt(_command);
+			var commandBytes = _deviceCommandEncryptor.Encrypt(_command);
 			_logger.Trace("Encrypted command");
 
 			using (var client = new TcpClient())
@@ -83,13 +82,9 @@ namespace TPLinkSTBridgeService
 									writer.Write(readBuffer, 0, numberOfBytesRead);
 								}
 
-								// Ignore the first 4 bytes of the response data
-								// as this contains empty data which we don't need
-								// and corrupts the decryption process
-								var bytes = writer.ToArray().Skip(4).ToArray();
+								var bytes = writer.ToArray();
 
-								// Decrypt the data
-								var decrypted = _commandEncryptor.Decrypt(bytes);
+								var decrypted = _deviceCommandEncryptor.Decrypt(bytes);
 
 								_logger.Trace("Got response: {0}", decrypted);
 

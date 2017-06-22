@@ -9,12 +9,31 @@ namespace TPLinkSTBridgeService
 	/// The CommandEncryptor is used to encrypt commands so that they can be understood by
 	/// TP-Link devices, and for decrypting the command response returned from TP-Link devices
 	/// </summary>
-	internal class CommandEncryptor
+	internal class DeviceCommandEncryptor
 	{
+		#region Fields
+
 		/// <summary>
 		/// The first key used to encrypt and decrypt data
 		/// </summary>
 		private const int FirstKey = 171;
+
+		/// <summary>
+		/// Gets or sets a value indicating whether this instance is encryption for UDP.
+		/// </summary>
+		/// <value><c>true</c> if this instance is encryption for UDP; otherwise, <c>false</c>.</value>
+		private bool IsEncryptionForUDP { get; set; } = false;
+
+		#endregion
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="DeviceCommandEncryptor"/> class.
+		/// </summary>
+		/// <param name="isEncryptionForUdp">Specifies whether we are using this for a UDP connection</param>
+		public DeviceCommandEncryptor(bool isEncryptionForUdp)
+		{
+			IsEncryptionForUDP = isEncryptionForUdp;
+		}
 
 		/// <summary>
 		/// Encrypts the specified input.
@@ -33,7 +52,10 @@ namespace TPLinkSTBridgeService
 				key = b;
 			}
 
-			bytes.InsertRange(0, BitConverter.GetBytes(input.Length).Reverse());
+			if (!IsEncryptionForUDP)
+			{
+				bytes.InsertRange(0, BitConverter.GetBytes(input.Length).Reverse());
+			}
 
 			return bytes.Select(Convert.ToByte).ToArray();
 		}
@@ -46,6 +68,11 @@ namespace TPLinkSTBridgeService
 			var sb = new StringBuilder();
 
 			var key = FirstKey;
+
+			if (!IsEncryptionForUDP)
+			{
+				bytes = bytes.Skip(4).ToArray();
+			}
 
 			foreach (var b in bytes)
 			{
